@@ -1,0 +1,188 @@
+{
+  "info": {
+    "_postman_id": "ai-interview-room",
+    "name": "AI Interview Room API",
+    "description": "API para AI Interview Room com LocalStack",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interview Sessions",
+      "item": [
+        {
+          "name": "Criar Sessão",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidate_name\": \"João Silva\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/interview/session/create",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "session", "create"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Sessão",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/interview/session/{{session_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "session", "{{session_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Upload",
+      "item": [
+        {
+          "name": "Upload Vídeo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8000/interview/video/upload?session_id={{session_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "video", "upload"],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": "{{session_id}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feedback & Analysis",
+      "item": [
+        {
+          "name": "Salvar Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"{{session_id}}\",\n  \"feedback\": {\n    \"eye_contact_score\": 8.5,\n    \"posture_score\": 7.2,\n    \"nervousness_score\": 6.8,\n    \"expression_score\": 8.1,\n    \"overall_score\": 7.6,\n    \"comments\": \"Boa performance geral\",\n    \"recommendations\": [\n      \"Melhorar contato visual\",\n      \"Relaxar os ombros\"\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/interview/feedback/save",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "feedback", "save"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Feedback",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/interview/feedback/{{session_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "feedback", "{{session_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Iniciar Análise",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_id\": \"{{session_id}}\",\n  \"questions\": [\n    \"Fale sobre sua experiência\",\n    \"Por que você quer trabalhar aqui?\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/interview/analysis",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["interview", "analysis"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "session_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

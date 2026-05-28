@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # LocalStack - AWS local (S3, DynamoDB, Lambda, etc)
+  localstack:
+    image: localstack/localstack:2.0.2
+    container_name: ai-interview-localstack
+    ports:
+      - "4566:4566"  # LocalStack gateway
+    environment:
+      - SERVICES=s3,dynamodb,lambda,sqs
+      - DEBUG=0
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - LAMBDA_EXECUTOR=docker-reuse
+    networks:
+      - ai-interview-net
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-interview-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-test}
+    volumes:
+      - ./backend:/app
+    networks:
+      - ai-interview-net
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # PostgreSQL (opcional - para armazenar sessões)
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-interview-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=interview
+      - POSTGRES_PASSWORD=interview123
+      - POSTGRES_DB=interview_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai-interview-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U interview"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  ai-interview-net:
+    driver: bridge
