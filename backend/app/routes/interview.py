@@ -16,7 +16,7 @@ dynamodb_service = DynamoDBService()
 
 @router.post("/session/create", response_model=SessionResponse)
 async def create_session(request: CreateSessionRequest):
-    """Criar nova sessão de entrevista"""
+    """新規面接セッションの作成"""
     try:
         session_id = str(uuid.uuid4())
         session_data = await dynamodb_service.create_session(
@@ -32,13 +32,13 @@ async def create_session(request: CreateSessionRequest):
 
 @router.get("/session/{session_id}")
 async def get_session(session_id: str):
-    """Buscar dados da sessão"""
+    """セッション情報の取得"""
     try:
         session_data = await dynamodb_service.get_session(session_id)
         if not session_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sessão não encontrada"
+                detail="セッションが見つかりません"
             )
         return session_data
     except HTTPException:
@@ -51,26 +51,26 @@ async def get_session(session_id: str):
 
 @router.post("/video/upload")
 async def upload_video(session_id: str, file: UploadFile = File(...)):
-    """Upload de vídeo para a sessão"""
+    """面接回答動画のアップロード"""
     try:
-        # Validar sessão
+        # セッションの有効性検証
         session_data = await dynamodb_service.get_session(session_id)
         if not session_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sessão não encontrada"
+                detail="セッションが見つかりません"
             )
         
-        # Ler conteúdo do arquivo
+        # ファイルコンテンツの読み込み
         content = await file.read()
         
-        # Gerar chave do arquivo
+        # S3オブジェクトキーの生成
         file_key = f"{session_id}/{file.filename}"
         
-        # Upload para S3
+        # S3へのアップロード
         s3_url = await s3_service.upload_video(file_key, content)
         
-        # Atualizar sessão com referência do vídeo
+        # セッション情報を更新（動画キーの設定と分析ステータスの更新）
         await dynamodb_service.update_session(
             session_id=session_id,
             video_key=file_key,
@@ -82,7 +82,7 @@ async def upload_video(session_id: str, file: UploadFile = File(...)):
             "session_id": session_id,
             "s3_url": s3_url,
             "file_key": file_key,
-            "message": "Vídeo enviado com sucesso"
+            "message": "動画のアップロードが完了しました"
         }
     except HTTPException:
         raise
@@ -94,23 +94,23 @@ async def upload_video(session_id: str, file: UploadFile = File(...)):
 
 @router.post("/feedback/save")
 async def save_feedback(request: FeedbackRequest):
-    """Salvar feedback e score da entrevista"""
+    """面接評価・フィードバックの保存"""
     try:
-        # Validar sessão
+        # セッションの有効性検証
         session_data = await dynamodb_service.get_session(request.session_id)
         if not session_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sessão não encontrada"
+                detail="セッションが見つかりません"
             )
         
-        # Salvar feedback
+        # フィードバックデータの保存
         feedback_data = await dynamodb_service.save_feedback(
             session_id=request.session_id,
             feedback=request.feedback.model_dump()
         )
         
-        # Atualizar status da sessão
+        # セッションステータスの更新
         await dynamodb_service.update_session(
             session_id=request.session_id,
             analysis_status='completed'
@@ -120,7 +120,7 @@ async def save_feedback(request: FeedbackRequest):
             "status": "success",
             "session_id": request.session_id,
             "feedback": feedback_data,
-            "message": "Feedback salvo com sucesso"
+            "message": "フィードバックが正常に保存されました"
         }
     except HTTPException:
         raise
@@ -132,13 +132,13 @@ async def save_feedback(request: FeedbackRequest):
 
 @router.get("/feedback/{session_id}")
 async def get_feedback(session_id: str):
-    """Buscar feedback da entrevista"""
+    """面接フィードバック情報の取得"""
     try:
         feedback_data = await dynamodb_service.get_feedback(session_id)
         if not feedback_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Feedback não encontrado"
+                detail="フィードバックデータが見つかりません"
             )
         return feedback_data
     except HTTPException:
@@ -151,20 +151,20 @@ async def get_feedback(session_id: str):
 
 @router.post("/analysis")
 async def start_analysis(request: AnalysisRequest):
-    """Iniciar análise da entrevista (mock para agora)"""
+    """面接分析プロセスの開始（現在はモック動作）"""
     try:
         session_data = await dynamodb_service.get_session(request.session_id)
         if not session_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sessão não encontrada"
+                detail="セッションが見つかりません"
             )
         
         return {
             "status": "analysis_started",
             "session_id": request.session_id,
             "questions": request.questions,
-            "message": "Análise iniciada. Isso é um mock - em produção seria feita pela IA"
+            "message": "分析が開始されました。この処理はモックです。本番環境ではAIモデルによる自動分析が実行されます。"
         }
     except HTTPException:
         raise
