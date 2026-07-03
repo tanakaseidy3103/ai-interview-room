@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Room - AI面接練習・評価システム</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- メメインヘッダー -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🎥</span>
+                <span class="logo-text">AI Interview Room</span>
+            </div>
+            <div class="status-indicator">
+                <span class="pulse-dot green"></span>
+                <span id="api-status-text">サーバーに接続中...</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- 画面 1: 案内 / 名前入力 -->
+            <section id="screen-welcome" class="screen active">
+                <div class="card glass-card welcome-card">
+                    <div class="welcome-badge">AI評価モジュール 1.0</div>
+                    <h1>AI技術・行動面接シミュレーション</h1>
+                    <p class="subtitle">当システムはWebカメラとマイクを利用し、回答中のアイコンタクト、姿勢、表情、声の安定性をAI分析して評価フィードバックを提示します。</p>
+                    
+                    <form id="form-start-interview" class="welcome-form">
+                        <div class="input-group">
+                            <label for="candidate-name">フルネームを入力してください</label>
+                            <input type="text" id="candidate-name" required placeholder="例: 山田 太郎" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large">
+                            面接を開始する <span class="arrow">→</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 画面 2: 面接コンソール (カメラ録画 & 質問) -->
+            <section id="screen-interview" class="screen">
+                <div class="interview-layout">
+                    <!-- 左カラム: カメラとステータス -->
+                    <div class="camera-column">
+                        <div class="card glass-card camera-card">
+                            <div class="camera-overlay">
+                                <div class="recording-badge" id="recording-badge">
+                                    <span class="pulse-dot red"></span>
+                                    <span id="recording-status">録画開始待ち</span>
+                                </div>
+                                <div class="timer-badge" id="timer-badge">00:00</div>
+                            </div>
+                            <video id="webcam-preview" autoplay playsinline muted></video>
+                            
+                            <!-- 音声レベルモニター -->
+                            <div class="audio-monitor">
+                                <span>🎙️ マイク入力</span>
+                                <div class="audio-bar-container">
+                                    <div id="audio-level-bar" class="audio-level-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 録画コントロール -->
+                        <div class="controls-card card glass-card">
+                            <button id="btn-record-action" class="btn btn-record btn-large">
+                                <span class="icon">🔴</span> 録画を開始する
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 右カラム: 質問内容 & 進行状況 -->
+                    <div class="question-column">
+                        <div class="card glass-card question-card">
+                            <div class="question-progress">
+                                <span class="badge">質問 <span id="current-question-index">1</span> / <span id="total-questions">3</span></span>
+                                <div class="progress-bar-bg">
+                                    <div id="question-progress-fill" class="progress-bar-fill" style="width: 33%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="question-content">
+                                <h2 id="question-text">質問を読み込んでいます...</h2>
+                                <p class="question-tip">💡 アドバイス: カメラをしっかり見つめ、背筋を伸ばし、落ち着いてハッキリと回答しましょう。</p>
+                            </div>
+
+                            <div class="action-footer">
+                                <button id="btn-next-question" class="btn btn-secondary" disabled>
+                                    次の質問へ <span class="arrow">→</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 画面 3: 診断レポート / フィードバックダッシュボード -->
+            <section id="screen-results" class="screen">
+                <div class="results-container">
+                    <div class="results-header text-center">
+                        <div class="success-badge">面接完了 🎉</div>
+                        <h1>AI行動分析結果レポート</h1>
+                        <p class="subtitle">受験者: <strong id="res-candidate-name">---</strong> | セッションID: <span id="res-session-id" class="code-font">---</span></p>
+                    </div>
+
+                    <div class="results-grid">
+                        <!-- 総合評価スコア -->
+                        <div class="card glass-card score-card text-center">
+                            <h3>総合評価スコア</h3>
+                            <div class="overall-score-circle">
+                                <span id="res-overall-score" class="score-num">0</span>
+                                <span class="score-total">/10</span>
+                            </div>
+                            <p class="score-verdict" id="res-score-verdict">素晴らしいパフォーマンスです！</p>
+                        </div>
+
+                        <!-- 評価項目詳細 -->
+                        <div class="card glass-card metrics-card">
+                            <h3>評価項目ごとの詳細分析</h3>
+                            <div class="metric-bar-group">
+                                <div class="metric-item">
+                                    <div class="metric-label">
+                                        <span>👁️ アイコンタクト</span>
+                                        <strong id="res-eye-contact">0/10</strong>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="bar-eye-contact" class="progress-bar-fill" style="width: 0%"></div></div>
+                                </div>
+
+                                <div class="metric-item">
+                                    <div class="metric-label">
+                                        <span>🧘 姿勢・ボディーランゲージ</span>
+                                        <strong id="res-posture">0/10</strong>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="bar-posture" class="progress-bar-fill" style="width: 0%"></div></div>
+                                </div>
+
+                                <div class="metric-item">
+                                    <div class="metric-label">
+                                        <span>😰 落ち着き・緊張度コントロール</span>
+                                        <strong id="res-calm">0/10</strong>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="bar-calm" class="progress-bar-fill" style="width: 0%"></div></div>
+                                </div>
+
+                                <div class="metric-item">
+                                    <div class="metric-label">
+                                        <span>😊 表情の豊かさ</span>
+                                        <strong id="res-expression">0/10</strong>
+                                    </div>
+                                    <div class="progress-bar-bg"><div id="bar-expression" class="progress-bar-fill" style="width: 0%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AIフィードバックコメント & 改善アドバイス -->
+                    <div class="card glass-card feedback-details-card">
+                        <h3>AIによる総合フィードバック</h3>
+                        <p id="res-comments" class="feedback-comments">...</p>
+                        
+                        <h3 class="margin-top-md">💡 今後の改善に向けたアドバイス</h3>
+                        <ul id="res-recommendations" class="recommendations-list">
+                            <!-- JS側で動的挿入 -->
+                        </ul>
+                    </div>
+
+                    <div class="results-actions text-center">
+                        <button id="btn-restart" class="btn btn-primary btn-large">新しく面接をやり直す</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
