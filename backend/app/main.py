@@ -5,18 +5,18 @@ import logging
 from app.config import settings
 from app.routes import interview, health
 
-# Logging
+# ログ設定
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# FastAPI App
+# FastAPIアプリケーション初期化
 app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
-    description="API para AI Interview Room com LocalStack"
+    description="LocalStackを使用したAI Interview Room用APIバックエンド"
 )
 
-# CORS
+# CORS設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,13 +25,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routes
+# ルーティング設定
 app.include_router(health.router)
 app.include_router(interview.router)
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """ルートエンドポイント"""
     return {
         "message": "🎥 AI Interview Room - Backend",
         "version": settings.api_version,
@@ -41,8 +41,8 @@ async def root():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Global exception handler"""
-    logger.error(f"Error: {str(exc)}")
+    """グローバル例外ハンドラー"""
+    logger.error(f"エラー発生: {str(exc)}")
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal Server Error", "error": str(exc)}
