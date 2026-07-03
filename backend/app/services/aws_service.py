@@ -14,7 +14,7 @@ class S3Service:
         )
 
     async def upload_video(self, file_key: str, file_content: bytes) -> str:
-        """Upload vídeo para S3 local"""
+        """S3ローカルストレージへの動画ファイルのアップロード"""
         try:
             self.s3_client.put_object(
                 Bucket=settings.s3_videos_bucket,
@@ -24,10 +24,10 @@ class S3Service:
             )
             return f"s3://{settings.s3_videos_bucket}/{file_key}"
         except Exception as e:
-            raise Exception(f"Erro ao upload S3: {str(e)}")
+            raise Exception(f"S3へのアップロードエラー: {str(e)}")
 
     async def get_video_url(self, file_key: str) -> str:
-        """Gera URL local para acessar o vídeo"""
+        """アップロード済み動画へアクセスするためのローカルURLを生成"""
         return f"{settings.aws_endpoint_url}/{settings.s3_videos_bucket}/{file_key}"
 
 class DynamoDBService:
@@ -41,7 +41,7 @@ class DynamoDBService:
         )
 
     async def create_session(self, session_id: str, candidate_name: str) -> dict:
-        """Cria uma nova sessão de entrevista"""
+        """DynamoDB内に新規面接セッションアイテムを作成"""
         try:
             table = self.dynamodb.Table(settings.dynamodb_sessions_table)
             session_data = {
@@ -55,10 +55,10 @@ class DynamoDBService:
             table.put_item(Item=session_data)
             return session_data
         except Exception as e:
-            raise Exception(f"Erro ao criar sessão: {str(e)}")
+            raise Exception(f"セッション作成エラー: {str(e)}")
 
     async def update_session(self, session_id: str, **kwargs) -> dict:
-        """Atualiza sessão de entrevista"""
+        """面接セッション情報の属性値を更新"""
         try:
             table = self.dynamodb.Table(settings.dynamodb_sessions_table)
             update_expr = "SET " + ", ".join([f"{k}=:{k}" for k in kwargs.keys()])
@@ -72,19 +72,19 @@ class DynamoDBService:
             )
             return response['Attributes']
         except Exception as e:
-            raise Exception(f"Erro ao atualizar sessão: {str(e)}")
+            raise Exception(f"セッション更新エラー: {str(e)}")
 
     async def get_session(self, session_id: str) -> dict:
-        """Busca sessão por ID"""
+        """DynamoDBからセッションIDに紐づく面接情報を取得"""
         try:
             table = self.dynamodb.Table(settings.dynamodb_sessions_table)
             response = table.get_item(Key={'session_id': session_id})
             return response.get('Item', {})
         except Exception as e:
-            raise Exception(f"Erro ao buscar sessão: {str(e)}")
+            raise Exception(f"セッション検索エラー: {str(e)}")
 
     async def save_feedback(self, session_id: str, feedback: dict) -> dict:
-        """Salva feedback da entrevista"""
+        """DynamoDB内に面接のAI評価・フィードバックアイテムを保存"""
         try:
             table = self.dynamodb.Table(settings.dynamodb_feedback_table)
             feedback_data = {
@@ -101,13 +101,13 @@ class DynamoDBService:
             table.put_item(Item=feedback_data)
             return feedback_data
         except Exception as e:
-            raise Exception(f"Erro ao salvar feedback: {str(e)}")
+            raise Exception(f"フィードバック保存エラー: {str(e)}")
 
     async def get_feedback(self, session_id: str) -> dict:
-        """Busca feedback por session_id"""
+        """DynamoDBからセッションIDに対応する評価フィードバックを取得"""
         try:
             table = self.dynamodb.Table(settings.dynamodb_feedback_table)
             response = table.get_item(Key={'session_id': session_id})
             return response.get('Item', {})
         except Exception as e:
-            raise Exception(f"Erro ao buscar feedback: {str(e)}")
+            raise Exception(f"フィードバック取得エラー: {str(e)}")
