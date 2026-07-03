@@ -7,10 +7,10 @@ router = APIRouter(tags=["health"])
 
 @router.get("/health")
 async def health_check():
-    """Health check da API e serviços"""
+    """APIとLocalStackサービスの接続ヘルスチェック"""
     services_status = {}
     
-    # Verificar LocalStack (S3)
+    # S3サービス接続状態の検証
     try:
         s3_client = boto3.client(
             's3',
@@ -24,7 +24,7 @@ async def health_check():
     except Exception as e:
         services_status['localstack_s3'] = f'unhealthy: {str(e)}'
     
-    # Verificar DynamoDB
+    # DynamoDBサービス接続状態の検証
     try:
         dynamodb = boto3.client(
             'dynamodb',
@@ -47,7 +47,7 @@ async def health_check():
 
 @router.get("/status")
 async def api_status():
-    """Status geral da API"""
+    """APIの基本動作環境ステータス取得"""
     return {
         "api": settings.api_title,
         "version": settings.api_version,
