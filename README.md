@@ -1,212 +1,165 @@
-# AI Interview Room
+# 🎥 AI Interview Room (AI面接シミュレーション・評価システム)
 
-AI Interview Room は、面接フローをローカルで再現するバックエンド中心のデモプロジェクトです。FastAPI で API を提供し、Docker Compose で環境を起動し、LocalStack で S3 と DynamoDB をエミュレートします。PostgreSQL もコンテナで用意しており、将来の拡張にも対応しやすい構成です。
+AI Interview Room は、エンジニア採用や面接練習を想定した、動画撮影・クラウド保存・AI行動評価のプロセスをローカル環境で再現したフルスタック・デモプロジェクトです。
 
-## プロジェクトの特徴
+実務に即したクラウドネイティブな技術構成（FastAPI + PostgreSQL + AWS LocalStack）に加え、ユーザーのWebカメラとマイクを利用して動画をキャプチャ・保存・分析結果をダッシュボード表示するモダンなインタラクティブ・フロントエンドを搭載しています。
 
-- FastAPI + Pydantic による REST API
-- Docker Compose で再現可能なローカル環境
-- LocalStack による S3 / DynamoDB の AWS 互換検証
-- Health Check と Swagger UI を搭載
-- 自動テスト用スクリプトで動作確認が可能
-- バックエンド、クラウド、DevOps 系のポートフォリオに向いた構成
+---
 
-## 技術スタック
+## 🚀 本プロジェクトで実証しているスキル (Skills Demonstrated)
 
-- Backend: Python 3.11+, FastAPI, Uvicorn, Pydantic
-- AWS 模擬環境: LocalStack, boto3
-- Storage: S3, DynamoDB
-- Database: PostgreSQL 15
-- Container: Docker, Docker Compose
-- Test: requests ベースの smoke test
+採用担当者や技術面接官の方に向けて、以下の技術力をアピールできるアーキテクチャで設計されています。
 
-## すぐに起動する
+*   **フロントエンド開発**: HTML5 `MediaRecorder` APIによる動画・音声のキャプチャ、`AudioContext`を活用したマイク音声レベルの可視化、CSSカスタム変数を用いたプレミアムなダークモードUI設計。
+*   **バックエンド開発**: Python FastAPIによる高性能非同期API構築、Pydanticによる厳密な型定義とバリデーション、CORSミドルウェアの適切な管理。
+*   **クラウド・DevOps**: AWS LocalStackを用いたクラウド環境（S3、DynamoDB）のローカルエミュレート、Docker Composeによるマルチコンテナ構成のオーケストレーション。
+*   **データベース設計**: PostgreSQLによる将来の履歴拡張データ設計、DynamoDBのハッシュキー設計による高速なキーバリューストア操作。
+*   **テスト自動化**: `requests`パッケージを用いたインテグレーション・スモークテストスクリプトの作成。
 
-### 前提条件
+---
 
-- Docker / Docker Compose
-- Python 3.11 以上
-- OpenAI API Key は任意（モック用途）
+## 🛠️ 技術スタック (Technology Stack)
 
-### 起動手順
+| カテゴリ | 技術・ツール | 説明 |
+| :--- | :--- | :--- |
+| **Frontend** | HTML5, CSS3 (Vanilla), JavaScript (ES6+) | `MediaRecorder` / `getUserMedia` / Web Audio API |
+| **Backend** | Python 3.11+, FastAPI, Uvicorn, Pydantic | 非同期Webフレームワーク、型安全なAPI定義 |
+| **Cloud Emulation** | LocalStack (v2.0.2) | AWS S3（動画保存） / DynamoDB（セッション & 評価） |
+| **Database** | PostgreSQL 15 | 永続化データベース |
+| **Container / Ops** | Docker, Docker Compose | 開発環境のコンテナコード化（IaCライク） |
+| **Testing** | Requests API Test | 自動スモークテスト |
 
-1. `ai-interview-room` ディレクトリを開きます。
-2. `docker-compose up -d` でコンテナを起動します。
-3. `localstack_init.sh` の内容を実行して、S3 バケットと DynamoDB テーブルを作成します。
-4. `http://localhost:8000/docs` で Swagger UI を開きます。
-5. `python test_api.py` で smoke test を実行します。
+---
 
-Windows ネイティブ環境では、`test_api.py` が一時ファイルとして Linux の `/tmp` を使うため、そのままだと失敗する場合があります。WSL / Linux ではそのまま動作します。
+## 📐 システムアーキテクチャ (Architecture)
 
-### そのまま使えるコマンド
+本システムは、Dockerコンテナ上で動作するマイクロサービスと、ローカルで実行される軽量なフロントエンドサーバーで構成されています。
 
-```bash
-docker-compose up -d
-docker-compose logs -f backend
+```text
+┌────────────────────────────────────────────────────────┐
+│                   ブラウザ (Frontend)                  │
+│       - http://localhost:3000                          │
+│       - カメラ・マイク入力 (MediaRecorder)             │
+│       - スコア・フィードバックダッシュボード           │
+└──────────────────────────┬─────────────────────────────┘
+                           │ APIコール / 動画アップロード
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│                FastAPI Backend (Docker)                │
+│       - http://localhost:8000                          │
+│       - ルーティング・ビジネスロジック・S3/Dynamo制御    │
+└──────────────┬──────────────────────────┬──────────────┘
+               │                          │
+               ▼ (Boto3 SDK)              ▼ (SQLAlchemy)
+┌──────────────────────────────┐  ┌──────────────────────┐
+│      LocalStack (Docker)     │  │  PostgreSQL (Docker) │
+│   S3: ai-interview-videos    │  │  port: 5432          │
+│   DynamoDB: 2 tables         │  │  (将来の拡張用)      │
+└──────────────────────────────┘  └──────────────────────┘
 ```
 
-## API ドキュメント
+---
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- Health Check: http://localhost:8000/health
-- LocalStack Endpoint: http://localhost:4566
-
-## テスト方法
-
-### 1. Health Check
-
-```http
-GET http://localhost:8000/health
-```
-
-### 2. セッション作成
-
-```http
-POST http://localhost:8000/interview/session/create
-Content-Type: application/json
-
-{
-  "candidate_name": "João Silva"
-}
-```
-
-### 3. セッション取得
-
-```http
-GET http://localhost:8000/interview/session/{session_id}
-```
-
-### 4. 動画アップロード
-
-```http
-POST http://localhost:8000/interview/video/upload?session_id={session_id}
-Content-Type: multipart/form-data
-
-file: [your_video.mp4]
-```
-
-### 5. フィードバック保存
-
-```http
-POST http://localhost:8000/interview/feedback/save
-Content-Type: application/json
-
-{
-  "session_id": "{session_id}",
-  "feedback": {
-    "eye_contact_score": 8.5,
-    "posture_score": 7.2,
-    "nervousness_score": 6.8,
-    "expression_score": 8.1,
-    "overall_score": 7.6,
-    "comments": "Good overall performance",
-    "recommendations": [
-      "Improve eye contact",
-      "Relax your shoulders"
-    ]
-  }
-}
-```
-
-### 6. フィードバック取得
-
-```http
-GET http://localhost:8000/interview/feedback/{session_id}
-```
-
-### 7. 分析開始
-
-```http
-POST http://localhost:8000/interview/analysis
-Content-Type: application/json
-
-{
-  "session_id": "{session_id}",
-  "questions": [
-    "Fale sobre sua experiência",
-    "Por que você quer trabalhar aqui?"
-  ]
-}
-```
-
-## アーキテクチャ
+## 📁 プロジェクト構成 (Directory Structure)
 
 ```text
 ai-interview-room/
-├── docker-compose.yml      # サービス定義
-├── backend/
+├── docker-compose.yml         # 開発環境コンテナ定義
+├── test_api.py                # バックエンド自動検証テスト
+├── camera_preview.py          # Python OpenCVカメラプレビュー（おまけ）
+├── COMO_RODAR.md              # ポルトガル語実行ガイド
+├── README.md                  # 本ドキュメント（日本語）
+│
+├── backend/                   # FastAPI バックエンドコード
 │   ├── app/
-│   │   ├── main.py        # FastAPI アプリ
-│   │   ├── config.py      # 設定
-│   │   ├── schemas.py     # Pydantic モデル
-│   │   ├── routes/
-│   │   │   ├── interview.py  # 面接 API
-│   │   │   └── health.py     # ヘルスチェック
-│   │   └── services/
-│   │       └── aws_service.py # S3 + DynamoDB
+│   │   ├── main.py            # APIエントリーポイント
+│   │   ├── config.py          # 環境変数設定
+│   │   ├── schemas.py         # Pydanticデータ定義
+│   │   ├── routes/            # 各APIルーティング（面接・ヘルスチェック）
+│   │   └── services/          # AWS連携サービスクラス
 │   ├── Dockerfile
 │   └── requirements.txt
-└── frontend/               # 将来追加予定
+│
+└── frontend/                  # インタラクティブ・フロントエンド
+    ├── index.html             # UIレイアウト（SPA構成）
+    ├── style.css              # Glassmorphism/ダークテーマCSS
+    └── app.js                 # カメラ・録画処理、API連携JavaScript
 ```
 
-## 各サービス
+---
 
-### LocalStack
+## 🏃 起動方法 (How to Run)
 
-- S3: 面接動画の保存
-- DynamoDB: セッションとフィードバックの保存
-- Lambda: 将来の非同期処理用
+### 前提条件
+*   **Docker** および **Docker Compose** がインストールされ、起動していること。
+*   **Python 3.11** 以上がローカル環境にインストールされていること。
 
-### FastAPI Backend
-
-- セッション管理 API
-- 動画アップロード API
-- フィードバック保存 / 取得 API
-
-### PostgreSQL
-
-- セッション状態の拡張保存
-- 履歴管理の基盤
-
-## LocalStack の確認
-
+### Step 1: Dockerコンテナの起動
+プロジェクトのルートディレクトリで以下のコマンドを実行し、バックエンド、データベース、LocalStackコンテナを立ち上げます。
 ```bash
-docker exec ai-interview-localstack awslocal s3 ls
-docker exec ai-interview-localstack awslocal dynamodb list-tables
-docker exec ai-interview-localstack awslocal dynamodb scan --table-name interview_sessions
-```
-
-## 環境変数
-
-設定例は `.env.local` を参照してください。
-
-## トラブルシューティング
-
-### LocalStack が起動しない
-
-```bash
-docker-compose down -v
 docker-compose up -d
 ```
 
-### S3 接続エラー
+### Step 2: AWSローカルリソースの初期化 (LocalStack)
+LocalStack内に必要なS3バケットとDynamoDBテーブルを新規作成します。以下のコマンドを実行してください。
+```bash
+# S3バケットの作成
+docker exec ai-interview-localstack aws --endpoint-url=http://localhost:4566 s3 mb s3://ai-interview-videos
 
-`http://localstack:4566` を使っているか確認してください。
+# DynamoDB セッションテーブルの作成
+docker exec ai-interview-localstack aws --endpoint-url=http://localhost:4566 dynamodb create-table --table-name interview_sessions --attribute-definitions AttributeName=session_id,AttributeType=S --key-schema AttributeName=session_id,KeyType=HASH --billing-mode PAY_PER_REQUEST --region us-east-1
 
-### DynamoDB 接続エラー
+# DynamoDB フィードバックテーブルの作成
+docker exec ai-interview-localstack aws --endpoint-url=http://localhost:4566 dynamodb create-table --table-name interview_feedback --attribute-definitions AttributeName=session_id,AttributeType=S --key-schema AttributeName=session_id,KeyType=HASH --billing-mode PAY_PER_REQUEST --region us-east-1
+```
 
-`.env.local` の AWS 認証情報を確認してください。
+### Step 3: フロントエンドサーバーの起動
+ローカルファイルからカメラ・マイクデバイスにアクセスする際のブラウザのセキュリティ制限を回避するため、Pythonに内蔵されている軽量HTTPサーバーを利用してフロントエンドをホスティングします。
+```bash
+python -m http.server 3000 --directory frontend
+```
+起動後、ブラウザで **[http://localhost:3000](http://localhost:3000)** にアクセスしてください。
 
-## 今後の拡張
+---
 
-- OpenAI Whisper による音声認識
-- OpenAI Vision による映像解析
-- MediaPipe による姿勢推定
-- Next.js フロントエンド
-- Azure Container Apps へのデプロイ
-- Entra ID 認証
+## 🧪 テスト・動作確認方法 (Testing)
 
-## License
+### 1. 自動テスト (Integration Smoke Test)
+バックエンドAPIが正しく起動し、S3やDynamoDBと連携できているかを検証するPythonテストスクリプトです。
+```bash
+# テストライブラリのインストール
+pip install requests
 
-MIT
+# テストの実行
+python test_api.py
+```
+**テスト通過時のコンソール出力:**
+```text
+Health: [OK] PASSOU
+Create Session: [OK] PASSOU
+Save Feedback: [OK] PASSOU
+Upload Video: [OK] PASSOU
+Get Session: [OK] PASSOU
+
+Total: 5/5 testes passaram
+=== TODOS OS TESTES PASSARAM! ===
+```
+
+### 2. APIインタラクティブドキュメント (Swagger UI)
+FastAPIが自動生成するインタラクティブなAPIドキュメントにアクセスし、直接APIを実行することができます。
+*   **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+*   **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+*   **APIヘルスステータス**: [http://localhost:8000/health](http://localhost:8000/health)
+
+---
+
+## 📈 今後の機能拡張ロードマップ
+1.  **AIリアルタイム音声認識 (STT)**: OpenAI Whisper API を用いて、撮影された面接動画の音声からテキストを文字起こしする機能。
+2.  **Visionによる表情・ジェスチャー解析**: MediaPipeまたはOpenCVを利用し、面接中の顔の表情（笑顔、緊張）や姿勢をグラフ解析する機能。
+3.  **LLM面接官フィードバック**: ChatGPT / Gemini APIを活用し、回答の「内容の的確さ」や「アピール度」についてプロフェッショナルなFBテキストを自動生成する機能。
+4.  **クラウドデプロイ**: AWS ECS (Fargate), S3, DynamoDB を用い、TerraformなどのIaCツールを利用してAWS本番環境へデプロイ。
+
+---
+
+## 📝 ライセンス
+本プロジェクトは **MIT License** のもとで公開されています。
