@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Script de teste automático para a API AI Interview Room
-Testa todos os endpoints principais
+AI Interview Room API 自動統合テストスクリプト
+すべての主要エンドポイントの動作確認を行います。
 """
 
 import requests
 import json
 import sys
+import os
+import tempfile
 from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
@@ -27,43 +29,43 @@ def print_success(text):
     print(f"{Colors.GREEN}[OK] {text}{Colors.END}")
 
 def print_error(text):
-    print(f"{Colors.RED}[ERRO] {text}{Colors.END}")
+    print(f"{Colors.RED}[エラー] {text}{Colors.END}")
 
 def print_info(text):
-    print(f"{Colors.YELLOW}[INFO] {text}{Colors.END}")
+    print(f"{Colors.YELLOW}[情報] {text}{Colors.END}")
 
 def test_health():
-    """Teste 1: Health Check"""
-    print_header("TESTE 1: Health Check")
+    """テスト 1: ヘルスチェック"""
+    print_header("テスト 1: ヘルスチェック (Health Check)")
     try:
         response = requests.get(f"{BASE_URL}/health")
         data = response.json()
         
         if response.status_code == 200:
-            print_success(f"Status: {data.get('status')}")
+            print_success(f"ステータス: {data.get('status')}")
             print(json.dumps(data, indent=2))
             
             s3_status = data['services']['localstack_s3']
             db_status = data['services']['localstack_dynamodb']
             
             if 'healthy' in s3_status and 'healthy' in db_status:
-                print_success("Todos os serviços estão HEALTHY")
+                print_success("すべてのサービスが正常に稼働しています (HEALTHY)")
                 return True
             else:
                 print_error(f"S3: {s3_status}, DynamoDB: {db_status}")
                 return False
         else:
-            print_error(f"HTTP {response.status_code}")
+            print_error(f"HTTPステータスコード: {response.status_code}")
             return False
     except Exception as e:
-        print_error(f"Erro: {str(e)}")
+        print_error(f"接続エラー: {str(e)}")
         return False
 
 def test_create_session():
-    """Teste 2: Criar Sessão de Entrevista"""
-    print_header("TESTE 2: Criar Sessão de Entrevista")
+    """テスト 2: 面接セッションの作成"""
+    print_header("テスト 2: 面接セッションの作成")
     try:
-        payload = {"candidate_name": "João Silva"}
+        payload = {"candidate_name": "山田 太郎"}
         response = requests.post(
             f"{BASE_URL}/interview/session/create",
             json=payload,
@@ -73,21 +75,21 @@ def test_create_session():
         if response.status_code == 200:
             data = response.json()
             session_id = data.get('session_id')
-            print_success(f"Sessão criada com sucesso!")
+            print_success(f"面接セッションが正常に作成されました！")
             print(json.dumps(data, indent=2))
             return session_id
         else:
-            print_error(f"HTTP {response.status_code}: {response.text}")
+            print_error(f"HTTPステータスコード {response.status_code}: {response.text}")
             return None
     except Exception as e:
-        print_error(f"Erro: {str(e)}")
+        print_error(f"接続エラー: {str(e)}")
         return None
 
 def test_save_feedback(session_id):
-    """Teste 3: Salvar Feedback"""
-    print_header("TESTE 3: Salvar Feedback")
+    """テスト 3: フィードバックの保存"""
+    print_header("テスト 3: フィードバックの保存")
     if not session_id:
-        print_error("Session ID não disponível")
+        print_error("セッションIDが取得できませんでした")
         return False
     
     try:
@@ -99,11 +101,11 @@ def test_save_feedback(session_id):
                 "nervousness_score": 7,
                 "expression_score": 8,
                 "overall_score": 8,
-                "comments": "Excelente desempenho! Muito engajado.",
+                "comments": "素晴らしい回答でした。非常に論理的です。",
                 "recommendations": [
-                    "Melhorar contato visual",
-                    "Relaxar os ombros",
-                    "Falar com mais confiança"
+                    "アイコンタクトをさらに改善する",
+                    "肩の力を抜きリラックスした姿勢をとる",
+                    "より自信を持ってハッキリと話す"
                 ]
             }
         }
@@ -116,26 +118,29 @@ def test_save_feedback(session_id):
         
         if response.status_code == 200:
             data = response.json()
-            print_success(f"Feedback salvo com sucesso!")
+            print_success(f"フィードバックが正常に保存されました！")
             print(json.dumps(data, indent=2))
             return True
         else:
-            print_error(f"HTTP {response.status_code}: {response.text}")
+            print_error(f"HTTPステータスコード {response.status_code}: {response.text}")
             return False
     except Exception as e:
-        print_error(f"Erro: {str(e)}")
+        print_error(f"接続エラー: {str(e)}")
         return False
 
 def test_upload_video(session_id):
-    """Teste 4: Upload de Vídeo"""
-    print_header("TESTE 4: Upload de Vídeo")
+    """テスト 4: 動画のアップロード"""
+    print_header("テスト 4: 動画のアップロード")
     if not session_id:
-        print_error("Session ID não disponível")
+        print_error("セッションIDが取得できませんでした")
         return False
     
+    test_file_path = None
     try:
-        # Cria um arquivo de teste (arquivo pequeno para teste)
-        test_file_path = "/tmp/test_video.mp4"
+        # OS依存しない一時ファイルパスの作成
+        temp_dir = tempfile.gettempdir()
+        test_file_path = os.path.join(temp_dir, "test_video.mp4")
+        
         with open(test_file_path, 'wb') as f:
             f.write(b'fake video content for testing')
         
@@ -148,21 +153,28 @@ def test_upload_video(session_id):
         
         if response.status_code == 200:
             data = response.json()
-            print_success(f"Vídeo enviado com sucesso!")
+            print_success(f"動画が正常にアップロードされました！")
             print(json.dumps(data, indent=2))
             return True
         else:
-            print_error(f"HTTP {response.status_code}: {response.text}")
+            print_error(f"HTTPステータスコード {response.status_code}: {response.text}")
             return False
     except Exception as e:
-        print_error(f"Erro: {str(e)}")
+        print_error(f"接続エラー: {str(e)}")
         return False
+    finally:
+        # 一時ファイルの削除
+        if test_file_path and os.path.exists(test_file_path):
+            try:
+                os.remove(test_file_path)
+            except OSError:
+                pass
 
 def test_get_session(session_id):
-    """Teste 5: Recuperar Sessão"""
-    print_header("TESTE 5: Recuperar Sessão")
+    """テスト 5: セッション情報の取得"""
+    print_header("テスト 5: セッション情報の取得")
     if not session_id:
-        print_error("Session ID não disponível")
+        print_error("セッションIDが取得できませんでした")
         return False
     
     try:
@@ -172,19 +184,19 @@ def test_get_session(session_id):
         
         if response.status_code == 200:
             data = response.json()
-            print_success(f"Sessão recuperada com sucesso!")
+            print_success(f"セッション情報が正常に取得されました！")
             print(json.dumps(data, indent=2))
             return True
         else:
-            print_error(f"HTTP {response.status_code}: {response.text}")
+            print_error(f"HTTPステータスコード {response.status_code}: {response.text}")
             return False
     except Exception as e:
-        print_error(f"Erro: {str(e)}")
+        print_error(f"接続エラー: {str(e)}")
         return False
 
 def main():
-    print_info(f"Iniciando testes da API em {BASE_URL}")
-    print_info(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print_info(f"APIテストを開始します: {BASE_URL}")
+    print_info(f"テスト実行時刻: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     results = {
         "health": False,
@@ -194,48 +206,48 @@ def main():
         "get_session": False
     }
     
-    # Teste 1: Health
+    # テスト 1: Health
     results["health"] = test_health()
     
     if not results["health"]:
-        print_error("\n❌ API não está saudável. Abortar testes.")
+        print_error("\n❌ APIが正常に稼働していません。テストを中断します。")
         sys.exit(1)
     
-    # Teste 2: Criar Sessão
+    # テスト 2: セッション作成
     session_id = test_create_session()
     results["create_session"] = session_id is not None
     
     if not session_id:
-        print_error("\n❌ Falha ao criar sessão. Abortar testes.")
+        print_error("\n❌ セッションの作成に失敗したため、テストを中断します。")
         sys.exit(1)
     
-    # Teste 3: Feedback
+    # テスト 3: フィードバック保存
     results["save_feedback"] = test_save_feedback(session_id)
     
-    # Teste 4: Upload
+    # テスト 4: 動画アップロード
     results["upload_video"] = test_upload_video(session_id)
     
-    # Teste 5: Get Session
+    # テスト 5: セッション情報取得
     results["get_session"] = test_get_session(session_id)
     
-    # Resumo Final
-    print_header("RESUMO DOS TESTES")
+    # 最終リザルト表示
+    print_header("テスト結果サマリー")
     
     total = len(results)
     passed = sum(1 for v in results.values() if v)
     
     for test_name, result in results.items():
-        status = "[OK] PASSOU" if result else "[ERRO] FALHOU"
+        status = "[OK] 合格" if result else "[エラー] 不合格"
         color = Colors.GREEN if result else Colors.RED
         print(f"{color}{test_name.replace('_', ' ').title()}: {status}{Colors.END}")
     
-    print(f"\n{Colors.BLUE}Total: {passed}/{total} testes passaram{Colors.END}")
+    print(f"\n{Colors.BLUE}合計: {passed}/{total} 件のテストに合格しました{Colors.END}")
     
     if passed == total:
-        print_success("\n=== TODOS OS TESTES PASSARAM! API esta funcionando perfeitamente! ===")
+        print_success("\n=== すべてのテストに合格しました！APIは完全に正常動作しています！ ===")
         sys.exit(0)
     else:
-        print_error(f"\n=== {total - passed} teste(s) falharam. ===")
+        print_error(f"\n=== {total - passed} 件のテストが失敗しました。 ===")
         sys.exit(1)
 
 if __name__ == "__main__":
